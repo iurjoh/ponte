@@ -1,9 +1,9 @@
 import {config} from './config.js';
 import {strings} from './i18n.js';
 import {setSession,clearSession,hasSession,identify,loadFiles,saveEdit} from './api.js';
-import {isApplication,isSent,safeLink,matches,PonteError} from './model.js';
+import {isApplication,isSent,safeLink,matches,companyPeople,PonteError} from './model.js';
 const root=document.querySelector('#app');
-let lang='pt',page='home',section='applications',view=innerWidth<650?'list':'board',data=null,files=null,account='',error='',success='',busy=false,token='',expiryTimer=null,expectedAccount='',q='',type='',status='',edit=null,client=null,pickerLoaded=false;
+let lang='pt',page='home',section='applications',view=innerWidth<650?'list':'board',netView='people',data=null,files=null,account='',error='',success='',busy=false,token='',expiryTimer=null,expectedAccount='',q='',type='',status='',edit=null,client=null,pickerLoaded=false;
 const t=k=>strings[lang][k]||k;
 function el(tag,attrs={},...children){const n=document.createElement(tag);for(const [k,v] of Object.entries(attrs)){if(k.startsWith('on'))n.addEventListener(k.slice(2),v);else if(k==='class')n.className=v;else if(k==='text')n.textContent=v;else if(k==='value')n.value=v;else if(k==='disabled')n.disabled=v;else n.setAttribute(k,v);}for(const c of children.flat()){if(c!==undefined&&c!==null)n.append(c instanceof Node?c:document.createTextNode(String(c)));}return n;}
 const btn=(label,fn,cls='',disabled=false)=>el('button',{type:'button',onclick:fn,class:cls,disabled},label);
@@ -75,20 +75,33 @@ function renderDashboard(main){
 }
 function selectField(id,label,values,value,change){const s=el('select',{id,onchange:e=>change(e.target.value)},el('option',{value:''},t('all')),...values.map(v=>el('option',{value:v},v)));s.value=value;return el('div',{class:'field'},el('label',{for:id},label),s);}
 function renderCentral(main){
- main.append(heading(t('central')),el('div',{class:'tabs'},...['applications','network'].map(s=>btn(t(s),()=>{section=s;q='';type='';status='';render();},section===s?'active':''))));
+ main.append(heading(t('central')),el('div',{class:'tabs'},...['applications','network'].map(s=>btn(t(s),()=>{section=s;q='';type='';status='';netView='people';render();},section===s?'active':''))));
+ if(section==='network')main.append(el('div',{class:'tabs'},...['people','companies'].map(v=>btn(t(v),()=>{netView=v;q='';render();},netView===v?'active':''))));
  const search=el('input',{id:'search',type:'search',value:q,placeholder:t('search'),oninput:e=>{q=e.target.value;updateResults();}});
  const filters=el('div',{class:'filters'},el('div',{class:'field search'},el('label',{for:'search'},t('search')),search));
  if(section==='applications'){filters.append(selectField('type',t('type'),[...new Set(data.rows.map(r=>r.type))],type,v=>{type=v;updateResults();}),selectField('status',t('status'),[...new Set(data.rows.map(r=>r.status))],status,v=>{status=v;updateResults();}),el('div',{class:'actions'},btn(t('list'),()=>{view='list';render();},view==='list'?'active':''),btn(t('board'),()=>{view='board';render();},view==='board'?'active':'')));main.append(el('p',{class:'note'},t('boardHelp')));}
  main.append(filters,el('div',{id:'results'}));updateResults();
 }
 function updateResults(){const box=document.querySelector('#results');if(!box||!data)return;box.replaceChildren();
- if(section==='network'){const cs=data.contacts.filter(c=>[c.cells[0],c.entity,c.sourceTab].join(' ').toLowerCase().includes(q.toLowerCase()));box.append(cs.length?el('div',{class:'listgrid'},...cs.map(contactCard)):el('div',{class:'empty'},t('emptyFilter')));return;}
+ if(section==='network'){
+ if(netView==='companies'){const cos=(data.companies||[]).filter(co=>co.join(' ').toLowerCase().includes(q.toLowerCase()));box.append(cos.length?el('div',{class:'listgrid'},...cos.map(companyCard)):el('div',{class:'empty'},t('emptyFilter')));return;}
+ const cs=data.contacts.filter(c=>[c.cells[0],c.entity,c.cells[2]].join(' ').toLowerCase().includes(q.toLowerCase()));box.append(cs.length?el('div',{class:'listgrid'},...cs.map(contactCard)):el('div',{class:'empty'},t('emptyFilter')));return;}
  const rows=data.rows.filter(r=>matches(r,q)&&(!type||r.type===type)&&(!status||r.status===status));if(!rows.length){box.append(el('div',{class:'empty'},t('emptyFilter')));return;}
  if(view==='list')box.append(el('div',{class:'listgrid'},...rows.map(applicationCard)));else{const grouped=new Map();for(const r of rows){if(!grouped.has(r.status))grouped.set(r.status,[]);grouped.get(r.status).push(r);}box.append(el('div',{class:'board'},...Array.from(grouped,([s,rs])=>el('section',{class:'column'},el('h3',{},s,el('span',{},rs.length)),...rs.map(applicationCard)))));}
 }
 function applicationCard(r){return el('article',{class:'card'},el('span',{class:'badge'},r.type),el('h3',{},r.role),el('p',{},r.company),el('span',{class:'badge'},r.status),el('div',{class:'date'},dateText(r.date)),btn(t('details'),()=>showDetails(r),'small'));}
 function link(text,url){const safe=safeLink(url);return safe?el('a',{href:safe,target:'_blank',rel:'noopener noreferrer',referrerpolicy:'no-referrer'},text):el('span',{},url||'');}
-function contactCard(record){const c=record.cells;const links=el('div',{class:'links'});if(c[5]&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c[5]))links.append(el('a',{href:'mailto:'+encodeURIComponent(c[5])},c[5]));if(c[6])links.append(link('LinkedIn',c[6]));return el('article',{class:'card contact'},el('h3',{},c[0]),el('p',{},[c[1],c[2]].filter(Boolean).join(' · ')),el('span',{class:'badge'},c[8]),el('dl',{},el('dt',{},t('represented')),el('dd',{},record.entity),el('dt',{},t('sourceTab')),el('dd',{},record.sourceTab),el('dt',{},t('lastContact')),el('dd',{},c[7]||t('noDate')),el('dt',{},t('nextStep')),el('dd',{},c[9]),el('dt',{},t('source')),el('dd',{},c[10])),links);}
+function contactCard(record){const c=record.cells;const links=el('div',{class:'links'});if(c[5]&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c[5]))links.append(el('a',{href:'mailto:'+encodeURIComponent(c[5])},c[5]));if(c[6])links.append(link('LinkedIn',c[6]));return el('article',{class:'card contact'},el('h3',{},c[0]),el('p',{},[c[1],c[2]].filter(Boolean).join(' · ')),el('span',{class:'badge'},c[8]),el('dl',{},el('dt',{},t('represented')),el('dd',{},record.entity),el('dt',{},t('lastContact')),el('dd',{},c[7]||t('noDate')),el('dt',{},t('nextStep')),el('dd',{},c[9]),el('dt',{},t('source')),el('dd',{},c[10])),links);}
+function companyCard(co){
+ const people=companyPeople(co[0],data.contacts);const dl=el('dl');
+ for(const [i,k] of [[1,'location'],[2,'activityType'],[3,'priority'],[4,'interestRoles'],[5,'caveats'],[6,'channel'],[7,'opening'],[8,'relation'],[12,'lastApplication'],[13,'history']])if(co[i])dl.append(el('dt',{},t(k)),el('dd',{},co[i]));
+ const links=el('div',{class:'links'});for(const u of String(co[14]||'').split('|').map(s=>s.trim()).filter(Boolean))links.append(link(t('officialSource'),u));
+ const stats=el('p',{class:'note'},t('applications')+': '+(co[9]||'0')+' · '+t('cvsPrepared')+': '+(co[10]||'0')+' · Networking: '+(co[11]||'0'));
+ const peopleBox=el('div',{class:'companypeople'},el('h4',{},t('peopleAt')));
+ if(people.length)for(const p of people){const c=p.cells;const pl=el('div',{class:'links'});if(c[5]&&/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c[5]))pl.append(el('a',{href:'mailto:'+encodeURIComponent(c[5])},c[5]));if(c[6])pl.append(link('LinkedIn',c[6]));peopleBox.append(el('div',{class:'personline'},el('div',{},el('strong',{},c[0]),el('span',{class:'muted'},' '+[c[2],c[7]?t('lastContact')+': '+c[7]:''].filter(Boolean).join(' · '))),pl));}
+ else peopleBox.append(el('p',{class:'note'},t('noCompanyPeople')));
+ return el('article',{class:'card company'},el('h3',{},co[0]),stats,dl,links,peopleBox);
+}
 function showDetails(r){
  if(!hasSession()){notify(new PonteError('expired'));return;}
  edit={...r,cells:[...r.cells]};const d=dialogBase(r.role);const head=el('div',{class:'dialoghead'},el('div',{},el('span',{class:'badge'},r.type),el('h2',{},r.role),el('p',{class:'muted'},r.company)),btn(t('close'),()=>{edit=null;d.remove();},'small'));d.append(head);
