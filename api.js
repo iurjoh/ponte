@@ -1,4 +1,4 @@
-import {PonteError,parseTracker,parseContacts,rowForEdit,isApplication} from './model.js';
+import {PonteError,parseTracker,parseContacts,parseCompanies,rowForEdit,isApplication} from './model.js';
 let session=null;
 export function setSession(s){session=s;}
 export function clearSession(){session=null;}
@@ -18,14 +18,17 @@ export async function loadFiles(files){
  const [tm,cm]=await Promise.all([metadata(files.tracker),metadata(files.contacts)]);
  if(tm.spreadsheetId!==files.tracker||cm.spreadsheetId!==files.contacts||files.tracker===files.contacts)throw new PonteError('schema');
  const trackerTab=tm.sheets.find(s=>s.properties.title==='Candidaturas');
- // The original Contatos tab was renamed to Pessoas - geral. Both use the approved A:K schema.
- const names=['Pessoas - geral','Pessoas - Example Corp A','Pessoas - Example Agency','Pessoas - Example Corp B'];
+ // Owner consolidated the contact workbook on 2026-09-30: only Pessoas - geral and Empresas remain.
  const available=cm.sheets.map(s=>s.properties.title);
- const selected=names.every(n=>available.includes(n))?names:available.includes('Contatos')?['Contatos']:null;
- if(!trackerTab||!selected)throw new PonteError('schema');
- const [tv,...cv]=await Promise.all([range(files.tracker,"'Candidaturas'!A:N"),...selected.map(n=>range(files.contacts,"'"+n.replaceAll("'","''")+"'!A:K"))]);
- const contacts=cv.flatMap((values,i)=>parseContacts(values).map(c=>({...c,cells:c,sourceTab:selected[i],entity:c[1]})));
- return {rows:parseTracker(tv),contacts,queried:new Date(),trackerTitle:tm.properties.title,contactsTitle:cm.properties.title,contactTab:selected.join(', ')};
+ const peopleTab=available.includes('Pessoas - geral')?'Pessoas - geral':available.includes('Contatos')?'Contatos':null;
+ const companiesTab=available.includes('Empresas')?'Empresas':null;
+ if(!trackerTab||!peopleTab)throw new PonteError('schema');
+ const reads=[range(files.tracker,"'Candidaturas'!A:N"),range(files.contacts,"'"+peopleTab.replaceAll("'","''")+"'!A:K")];
+ if(companiesTab)reads.push(range(files.contacts,"'"+companiesTab.replaceAll("'","''")+"'!A:O"));
+ const [tv,cv,ev]=await Promise.all(reads);
+ const contacts=parseContacts(cv).map(c=>({cells:c,sourceTab:peopleTab,entity:c[1]}));
+ const companies=ev?parseCompanies(ev):[];
+ return {rows:parseTracker(tv),contacts,companies,queried:new Date(),trackerTitle:tm.properties.title,contactsTitle:cm.properties.title,contactTab:companiesTab?peopleTab+' + '+companiesTab:peopleTab};
 }
 export async function saveEdit(files,opened,status,notes){
  if(!isApplication(opened))throw new PonteError('readonly');
