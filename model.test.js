@@ -1,0 +1,15 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';import {TRACK_HEADERS,CONTACT_HEADERS,parseTracker,parseContacts,isoDate,isApplication,isSent,rowForEdit,safeLink,matches} from './model.js';
+const row=(type='Candidatura',status='CV preparado',id='ponte-test-1')=>[type,'Test role','Test company','','','','2026-09-30','','',status,'','','',id];
+test('literal status and type preserved, no CV prepared as sent',()=>{const [r]=parseTracker([TRACK_HEADERS,row()]);assert.equal(r.status,'CV preparado');assert(isApplication(r));assert(!isSent(r));});
+test('networking never counted as submitted application',()=>{const [r]=parseTracker([TRACK_HEADERS,row('Networking','e-mail enviado')]);assert(!isApplication(r));assert(!isSent(r));});
+test('sent and confirmed receipt remain distinct',()=>{const rows=parseTracker([TRACK_HEADERS,row('Candidatura','enviada','1'),row('Candidatura','enviada - recibo confirmado','2')]);assert(rows.every(isSent));assert.notEqual(rows[0].status,rows[1].status);});
+test('missing and duplicate IDs block edits',()=>{assert.throws(()=>parseTracker([TRACK_HEADERS,row('Candidatura','CV preparado','')]),/ids/);assert.throws(()=>parseTracker([TRACK_HEADERS,row(),row()]),/ids/);});
+test('wrong headers block parse',()=>assert.throws(()=>parseTracker([['bad'],row()]),/schema/));
+test('blank rows ignored without inventing dates',()=>{const r=row();r[6]='';const rows=parseTracker([TRACK_HEADERS,[],r]);assert.equal(rows.length,1);assert.equal(rows[0].date,'');assert.equal(rows[0].row,3);});
+test('invalid dates rejected, leap date validated',()=>{assert.equal(isoDate('2026-02-29'),'');assert.equal(isoDate('2024-02-29'),'2024-02-29');assert.equal(isoDate('30/09/2026'),'');});
+test('find row by ID after reorder',()=>{const opened=parseTracker([TRACK_HEADERS,row()])[0];const fresh=parseTracker([TRACK_HEADERS,row('Candidatura','enviada','other'),row()]);assert.equal(rowForEdit(fresh,opened.id,opened).row,3);});
+test('changed notes block save and preserve old row',()=>{const opened=parseTracker([TRACK_HEADERS,row()])[0];const changed=row();changed[10]='new';assert.throws(()=>rowForEdit(parseTracker([TRACK_HEADERS,changed]),opened.id,opened),/conflict/);});
+test('network edit rejected',()=>{const rows=parseTracker([TRACK_HEADERS,row('Networking')]);assert.throws(()=>rowForEdit(rows,rows[0].id,rows[0]),/readonly/);});
+test('unsafe URLs not linkified',()=>{assert.equal(safeLink('javascript:alert(1)'),null);assert.equal(safeLink('http://example.com'),null);assert.equal(safeLink('https://example.com'),'https://example.com/');});
+test('contacts absent fields remain blank and literal text stays literal',()=>{const rows=parseContacts([CONTACT_HEADERS,['Example','Company']]);assert.equal(rows[0][7],'');assert.equal(rows[0][9],'');});
+test('search accepts role and company without modifying source',()=>{const [r]=parseTracker([TRACK_HEADERS,row()]);assert(matches(r,'company'));assert(matches(r,'ROLE'));});
