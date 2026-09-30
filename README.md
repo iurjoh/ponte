@@ -3,7 +3,7 @@
 A private job-search workspace over the owner's existing Google Sheets, with a public static entry page. Portuguese/English interface. Application board/list, literal statuses, read-only network, dashboard and limited Status/Notes editing.
 
 ## Status
-Local implementation in progress. No production URL yet. Google OAuth and Picker configuration pending. Blank config fails closed; it never loads mock or private data. **Not yet accepted for use.**
+Implementation stored in private repository https://github.com/iurjoh/ponte . No public deployment yet. Cloudflare Free confirmed. The empty direct-upload project ponte-preview exists but two ZIP attempts stayed preparing at 0 B; no deployment was made. Git-connected deploy awaits owner granting this repo to the selected-repositories Cloudflare Pages installation. Google OAuth and Picker configuration pending. Blank config fails closed; it never loads mock or private data. **Not yet accepted for use.**
 
 ## Run
 Node 22+, no production dependencies:
@@ -21,7 +21,7 @@ Scopes: `openid email profile drive.file`. Picker explicitly selects tracker the
 ## Data contract and boundaries
 Tracker `Candidaturas!A:N`: exact approved A:M headers plus `ID Ponte` in N. Missing/duplicate IDs fail closed. Blank rows/dates stay blank. Networking records are never applications. Literal statuses remain separate; prepared CV is not a submission, suspended/rejected is not an offer. A date by itself is not evidence of receipt.
 
-Contacts originally used `Contatos!A:K`. Live inspection on 2026-09-30 found that tab replaced by `Pessoas - geral`, with the same A:K headers. Owner confirmed inclusion of all four Pessoas tabs on 2026-09-30. The network now reads Pessoas - geral, Pessoas - Example Corp A, Pessoas - Example Agency and Pessoas - Example Corp B, shows represented company/entity from existing Empresa column and source tab. Does not deduplicate or infer relationships. Empresas is a different model and excluded. No contact-sheet mutation. Legacy Contatos is accepted only when the four-tab layout is absent.
+Contacts originally used `Contatos!A:K`, later `Pessoas - geral` plus three per-company tabs. On 2026-09-30 the owner verified all 10 per-company contacts already existed in `Pessoas - geral` and ordered the Example Corp A/Example Agency/Example Corp B tabs deleted as redundant, keeping only `Pessoas - geral` (A:K, unchanged headers) and `Empresas` (A:O). The network now reads only those two tabs and offers two views: Pessoas (individual contacts with represented company/entity from the Empresa column) and Empresas (company cards that also list the mapped people working there, matched by normalized name/prefix between the company name and each contact's Empresa, plus their contact links). It does not deduplicate contacts or infer relationships beyond that name match. No contact-sheet mutation. Legacy Contatos is accepted only when Pessoas - geral is absent; Empresas is optional.
 
 Before editing: validate account/session, selected files, sheets and exact headers; reload all rows, locate stable ID, compare the complete original A:N row. Write only J:K using RAW input. Read again and confirm actual stored values before showing success. Cancel never writes. Retry after an uncertain save requires refreshing to avoid blind repeat writes.
 
@@ -31,7 +31,11 @@ Before editing: validate account/session, selected files, sheets and exact heade
 DOM construction uses textContent for all sheet values; no sheet HTML is executed. Only HTTPS links allowed, with noreferrer/no-referrer. No private data in source, logs, static HTML or persistent cache. Expiry/disconnect clears rendered private data. No analytics, service worker or persistent cache. Security headers provided for Cloudflare. Public deployment contains only interface assets and public Google configuration. Privacy depends also on the owner's Google account and sharing settings, not on a promise of absolute secrecy.
 
 ## Tests and acceptance
-Unit tests cover exact status/type, networking exclusion, date validation, missing/duplicate IDs, schema mismatch, reorder lookup, conflict blocking, unsafe URLs and blank fields. Live OAuth, denied access, failed writes, round-trip save, phone/tablet/desktop visual checks, keyboard and screen-reader checks are still pending. No real application changes should be used as test fixtures. Private datasets must never be committed.
+Unit tests cover exact status/type, networking exclusion, date validation, missing/duplicate IDs, schema mismatch, reorder lookup, conflict blocking, unsafe URLs and blank fields. Live OAuth, denied access, failed writes, round-trip save, real-data phone/tablet/desktop checks and screen-reader checks are still pending. 22 model/API tests passed. Synthetic OAuth/Picker/Sheets flows passed at 390, 820 and 1440 px: connection, file choice, dashboard, board/list, Cancel (zero writes), Save (one RAW write and reread), four-tab network, language switch and disconnect clearing private rows. Actual pixels from synthetic-flow captures inspected. These mocks are not evidence that real Google OAuth works. No real application changes should be used as test fixtures. Private datasets must never be committed.
+
+2026-09-30: added ID Ponte header and 48 UUIDs only in tracker N1:N49, under owner approval. Reread confirmed exact IDs and unchanged A:M cell values, normalizing omitted trailing blanks. No application Status/Notes or contact values changed.
+
+Cost gate: https://developers.google.com/workspace/sheets/api/limits now says standard API use has no additional cost but over-quota billing is planned later in 2026. Before enabling APIs, verify a dedicated project with no linked billing cannot incur a charge; if not guaranteed, stop. No Google project created or API activated yet. Console sign-in for the intended owner account was blocked by rejected saved password; no recovery/reset attempted.
 
 ## Phase 1 exclusions
 No new/deleted applications, drag/drop, contact editing, reminders, messages, CV downloads, Gemini or payment infrastructure. Next steps are literal contact text, not scheduled reminders.
