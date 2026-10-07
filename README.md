@@ -31,3 +31,71 @@ Browser -> static interface (no framework, no production dependencies)
 | File | Responsibility |
 | --- | --- |
 | `index.html`, `style.css` | Static interface shell and layout. |
+| `app.js` | UI behavior, views, language switch. |
+| `model.js` | Data rules: statuses, validation, matching. |
+| `api.js` | Google OAuth, Picker and Sheets access. |
+| `i18n.js` | Portuguese/English strings. |
+| `config.js` | Public Google identifiers (never secrets). |
+| `build.js` | Static build into `dist/`. |
+| `model.test.js`, `api.test.js` | Unit tests (`node --test`). |
+| `ui-check.js` | Synthetic UI flows via Playwright (`npm run test:ui`). |
+
+Node 22+, no production dependencies.
+
+## Data contract and boundaries
+
+Tracker `Candidaturas!A:N`: exact approved A:M headers plus `ID Ponte` in N. Missing/duplicate IDs fail closed. Blank rows/dates stay blank. Networking records are never applications. Literal statuses remain separate; prepared CV is not a submission, suspended/rejected is not an offer. A date by itself is not evidence of receipt.
+
+The contact view reads separate people/company tabs without modifying contact rows. Schema selection and matching must be validated against each user-selected file.
+
+Before editing: validate account/session, selected files, sheets and exact headers; reload all rows, locate stable ID, compare the complete original A:N row. Write only J:K using RAW input. Read again and confirm actual stored values before showing success. Cancel never writes. Retry after an uncertain save requires refreshing to avoid blind repeat writes.
+
+**Concurrency limit:** Google Sheets does not offer conditional updates here. Checks reduce conflicts but another writer can change/reorder a row between the read and write. Do not treat this as concurrency-safe. Avoid simultaneous edits; the limitation must be validated with the owner before enabling general use.
+
+## Google connection
+
+Create a dedicated Google project with billing disabled. Enable Sheets, Drive and Picker APIs. Configure external OAuth in Testing, add the actual owner account as test user and register only the deployed app origin. Public `config.js` accepts an OAuth client ID, project number/app ID and an HTTP-referrer/API-restricted Picker API key. These are public browser identifiers, never a client secret. Tokens are held only in memory; no local/session storage, cookies or private rows in code.
+
+Scopes: `openid email profile drive.file`. Picker explicitly selects tracker then contacts; no broad spreadsheets or Drive scopes. The permission covers entire selected files, while application behavior restricts writes to J:K (Status/Notas). Owner confirms email in UI and userinfo must match. Seven-day Testing authorization expiry requires reconnection; short-lived tokens are cleared at expiry and disconnect. Disconnect-and-revoke additionally revokes the Google grant.
+
+Google project/API/billing status was not verified in this review. Current browser configuration is empty. Before activation, recheck current service terms and cost boundaries; no paid setup is authorized by this documentation draft.
+
+## Security and privacy
+
+DOM construction uses textContent for all sheet values; no sheet HTML is executed. Only HTTPS links allowed, with noreferrer/no-referrer. No private data in source, logs, static HTML or persistent cache. Expiry/disconnect clears rendered private data. No analytics, service worker or persistent cache. Security headers provided for Cloudflare. The public deployment contains only interface assets and public Google configuration. Privacy depends also on the owner's Google account and sharing settings, not on a promise of absolute secrecy.
+
+## Testing
+
+Unit tests cover exact status/type, networking exclusion, date validation, missing/duplicate IDs, schema mismatch, reorder lookup, conflict blocking, unsafe URLs and blank fields. 24 model/API tests passed. Synthetic OAuth/Picker/Sheets flows passed at 390, 820 and 1440 px: connection, file choice, dashboard, board/list, Cancel (zero writes), Save (one RAW write and reread), two-view network (Pessoas/Empresas), language switch and disconnect clearing private rows. Actual pixels from synthetic-flow captures were inspected.
+
+These mocks are not evidence that real Google OAuth works. Live OAuth, denied access, failed writes, round-trip save, real-data phone/tablet/desktop checks and screen-reader checks are still pending. No real application changes should be used as test fixtures. Private datasets must never be committed.
+
+Stable IDs are part of the application data contract. Use invented fixtures for tests, never owner records.
+
+## Run and deployment
+
+```bash
+npm test
+npm run build
+```
+
+Serve `dist` over HTTPS. Cloudflare Pages: build `npm test && npm run build`, output `dist`, no framework. Keep the repo private. No billing/card, server, analytics or Gemini integration.
+
+## Phase 1 exclusions and roadmap
+
+No new/deleted applications, drag/drop, contact editing, reminders, messages, CV downloads, Gemini or payment infrastructure. Next steps are literal contact text, not scheduled reminders.
+
+- [ ] Verify the existing Google project state and complete OAuth/Picker configuration.
+- [ ] Run the pending live checks (OAuth, denied access, failed writes, round-trip save, real devices, screen reader).
+- [ ] Validate the concurrency limitation with the owner before general use.
+- [ ] Remove the leftover empty `ponte-preview` direct-upload project.
+
+## Credits and license status
+
+Built with vanilla JavaScript and Node's test runner; Playwright for synthetic UI checks. No `LICENSE` file was found at the repository root during this review; this update does not introduce one.
+
+## Documentation review - 2026-10-07
+
+This is a documentation draft, not a release or a fresh runtime audit. Current repository visibility, README files, package scripts and root license paths were checked. Historical runtime and benchmark results above have not been rerun. Screenshots require a separate capture, privacy check, upload and rendered-image check before completion. Missing images are not replaced with broken embeds.
+
+Current `config.js` has empty `clientId`, `appId` and `pickerKey`. This does not prove Google project or billing state. Live OAuth and user-data workflows remain unverified. No root `LICENSE` was returned by the current lookup; no MIT claim or new license is introduced here.
