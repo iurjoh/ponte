@@ -54,7 +54,7 @@ Antes de editar: validar conta/sessão, arquivos selecionados, abas e cabeçalho
 
 ## Conexão Google
 
-Criar um projeto Google dedicado com faturamento desativado. Ativar as APIs Sheets, Drive e Picker. Configurar OAuth externo em Testing, adicionar a conta real do dono como usuário de teste e registrar apenas a origem do app publicado. O `config.js` público aceita um OAuth client ID, número do projeto/app ID e uma chave de API do Picker restrita por HTTP-referrer/API. São identificadores públicos de navegador, nunca client secret. Tokens ficam apenas em memória; sem local/session storage, cookies ou linhas privadas no código.
+Verificar o projeto Google dedicado existente e que o faturamento está desativado; conferir Sheets, Drive e Picker em vez de criar projeto duplicado. Configurar OAuth externo em Testing, adicionar a conta real do dono como usuário de teste e registrar apenas a origem do app publicado. O `config.js` público aceita um OAuth client ID, número do projeto/app ID e uma chave de API do Picker restrita por HTTP-referrer/API. São identificadores públicos de navegador, nunca client secret. Tokens ficam apenas em memória; sem local/session storage, cookies ou linhas privadas no código.
 
 Escopos: `openid email profile drive.file`. O Picker seleciona explicitamente tracker e depois contatos; sem escopos amplos de planilhas ou Drive. A permissão cobre os arquivos selecionados inteiros, enquanto o comportamento do app restringe escritas a J:K (Status/Notas). O dono confirma o e-mail na UI e o userinfo precisa coincidir. A expiração de sete dias do modo Testing exige reconexão; tokens de vida curta são limpos na expiração e na desconexão. Desconectar-e-revogar também revoga a concessão Google.
 
