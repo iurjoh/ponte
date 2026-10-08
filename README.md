@@ -54,7 +54,7 @@ Before editing: validate account/session, selected files, sheets and exact heade
 
 ## Google connection
 
-Create a dedicated Google project with billing disabled. Enable Sheets, Drive and Picker APIs. Configure external OAuth in Testing, add the actual owner account as test user and register only the deployed app origin. Public `config.js` accepts an OAuth client ID, project number/app ID and an HTTP-referrer/API-restricted Picker API key. These are public browser identifiers, never a client secret. Tokens are held only in memory; no local/session storage, cookies or private rows in code.
+Verify the existing dedicated Google project and that billing is disabled; check the Sheets, Drive and Picker APIs rather than creating a duplicate project. Configure external OAuth in Testing, add the actual owner account as test user and register only the deployed app origin. Public `config.js` accepts an OAuth client ID, project number/app ID and an HTTP-referrer/API-restricted Picker API key. These are public browser identifiers, never a client secret. Tokens are held only in memory; no local/session storage, cookies or private rows in code.
 
 Scopes: `openid email profile drive.file`. Picker explicitly selects tracker then contacts; no broad spreadsheets or Drive scopes. The permission covers entire selected files, while application behavior restricts writes to J:K (Status/Notas). Owner confirms email in UI and userinfo must match. Seven-day Testing authorization expiry requires reconnection; short-lived tokens are cleared at expiry and disconnect. Disconnect-and-revoke additionally revokes the Google grant.
 
