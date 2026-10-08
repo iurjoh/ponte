@@ -46,7 +46,7 @@ Node 22+, no production dependencies.
 
 Tracker `Candidaturas!A:N`: exact approved A:M headers plus `ID Ponte` in N. Missing/duplicate IDs fail closed. Blank rows/dates stay blank. Networking records are never applications. Literal statuses remain separate; prepared CV is not a submission, suspended/rejected is not an offer. A date by itself is not evidence of receipt.
 
-Contacts originally used `Contatos!A:K`, later `Pessoas - geral` plus three per-company tabs. On 2026-09-30 all 10 per-company contacts were checked against `Pessoas - geral` before the Example Corp A/Example Agency/Example Corp B tabs were deleted under the owner's instruction as redundant, keeping only `Pessoas - geral` (A:K, unchanged headers) and `Empresas` (A:O). The network now reads only those two tabs and offers two views: Pessoas (individual contacts with represented company/entity from the Empresa column) and Empresas (company cards that also list the mapped people working there, matched by normalized name/prefix between the company name and each contact's Empresa, plus their contact links). It does not deduplicate contacts or infer relationships beyond that name match. No contact-sheet mutation. Legacy Contatos is accepted only when Pessoas - geral is absent; Empresas is optional.
+The contact view reads separate people/company tabs without modifying contact rows. Schema selection and matching must be validated against each user-selected file.
 
 Before editing: validate account/session, selected files, sheets and exact headers; reload all rows, locate stable ID, compare the complete original A:N row. Write only J:K using RAW input. Read again and confirm actual stored values before showing success. Cancel never writes. Retry after an uncertain save requires refreshing to avoid blind repeat writes.
 
@@ -54,11 +54,11 @@ Before editing: validate account/session, selected files, sheets and exact heade
 
 ## Google connection
 
-Create a dedicated Google project with billing disabled. Enable Sheets, Drive and Picker APIs. Configure external OAuth in Testing, add the actual owner account as test user and register only the deployed app origin. Public `config.js` accepts an OAuth client ID, project number/app ID and an HTTP-referrer/API-restricted Picker API key. These are public browser identifiers, never a client secret. Tokens are held only in memory; no local/session storage, cookies or private rows in code.
+Verify the existing dedicated Google project and that billing is disabled; check the Sheets, Drive and Picker APIs rather than creating a duplicate project. Configure external OAuth in Testing, add the actual owner account as test user and register only the deployed app origin. Public `config.js` accepts an OAuth client ID, project number/app ID and an HTTP-referrer/API-restricted Picker API key. These are public browser identifiers, never a client secret. Tokens are held only in memory; no local/session storage, cookies or private rows in code.
 
 Scopes: `openid email profile drive.file`. Picker explicitly selects tracker then contacts; no broad spreadsheets or Drive scopes. The permission covers entire selected files, while application behavior restricts writes to J:K (Status/Notas). Owner confirms email in UI and userinfo must match. Seven-day Testing authorization expiry requires reconnection; short-lived tokens are cleared at expiry and disconnect. Disconnect-and-revoke additionally revokes the Google grant.
 
-Cost gate: the Sheets API limits page now says standard API use has no additional cost but over-quota billing is planned later in 2026. Before enabling APIs, verify a dedicated project with no linked billing cannot incur a charge; if not guaranteed, stop. No Google project created or API activated yet. Console sign-in for the intended owner account was blocked by a rejected saved password; no recovery/reset attempted.
+Google project/API/billing status was not verified in this review. Current browser configuration is empty. Before activation, recheck current service terms and cost boundaries; no paid setup is authorized by this documentation draft.
 
 ## Security and privacy
 
@@ -70,7 +70,7 @@ Unit tests cover exact status/type, networking exclusion, date validation, missi
 
 These mocks are not evidence that real Google OAuth works. Live OAuth, denied access, failed writes, round-trip save, real-data phone/tablet/desktop checks and screen-reader checks are still pending. No real application changes should be used as test fixtures. Private datasets must never be committed.
 
-On 2026-09-30 the `ID Ponte` header and 48 UUIDs were added only in tracker N1:N49, under owner approval. Reread confirmed exact IDs and unchanged A:M cell values, normalizing omitted trailing blanks. No application Status/Notes or contact values changed.
+Stable IDs are part of the application data contract. Use invented fixtures for tests, never owner records.
 
 ## Run and deployment
 
@@ -85,7 +85,7 @@ Serve `dist` over HTTPS. Cloudflare Pages: build `npm test && npm run build`, ou
 
 No new/deleted applications, drag/drop, contact editing, reminders, messages, CV downloads, Gemini or payment infrastructure. Next steps are literal contact text, not scheduled reminders.
 
-- [ ] Create the dedicated Google project and complete OAuth/Picker configuration.
+- [ ] Verify the existing Google project state and complete OAuth/Picker configuration.
 - [ ] Run the pending live checks (OAuth, denied access, failed writes, round-trip save, real devices, screen reader).
 - [ ] Validate the concurrency limitation with the owner before general use.
 - [ ] Remove the leftover empty `ponte-preview` direct-upload project.
@@ -93,3 +93,9 @@ No new/deleted applications, drag/drop, contact editing, reminders, messages, CV
 ## Credits and license status
 
 Built with vanilla JavaScript and Node's test runner; Playwright for synthetic UI checks. No `LICENSE` file was found at the repository root during this review; this update does not introduce one.
+
+## Documentation review - 2026-10-07
+
+This is a documentation draft, not a release or a fresh runtime audit. Current repository visibility, README files, package scripts and root license paths were checked. Historical runtime and benchmark results above have not been rerun. Screenshots require a separate capture, privacy check, upload and rendered-image check before completion. Missing images are not replaced with broken embeds.
+
+Current `config.js` has empty `clientId`, `appId` and `pickerKey`. This does not prove Google project or billing state. Live OAuth and user-data workflows remain unverified. No root `LICENSE` was returned by the current lookup; no MIT claim or new license is introduced here.
