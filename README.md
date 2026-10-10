@@ -1,23 +1,32 @@
-# Ponte - Phase 1
+# Ponte
 
 [Português (Brasil)](README.pt-BR.md) | **English**
 
-A private job-search workspace over the owner's existing Google Sheets, with a public static entry page. Portuguese/English interface.
+A free, open-source job-search organizer. Your applications and contacts stay in your own Google Sheets; Ponte is a careful window over them. Portuguese/English interface, no server, no analytics, no cost.
 
-**Interface preview:** https://ponte-vat.pages.dev/  
-**Source:** private repository. Documentation reviewed on 2026-10-01.
+**Live app:** https://ponte-vat.pages.dev/  
+**Privacy policy:** https://ponte-vat.pages.dev/privacy.html  
+**Questions and ideas:** [GitHub issues](https://github.com/iurjoh/ponte/issues)
 
 ## Status
 
-Deployed on 2026-10-01 (Europe/Stockholm) through Cloudflare Pages Git integration from this private repository. Cloudflare Free; no paid upgrade or card added. Git deployments use `main`, no framework, build `npm test && npm run build`, output `dist`. The public deployment contains only the interface, not contact or application rows.
+Public and published. The Google OAuth app is in production (not in testing mode) and the public page is deployed from `main` through Cloudflare Pages Free (build `npm test && npm run build`, output `dist`). Live sign-in, Picker selection and round-trip saves with a real sheet are still being verified by the owner. See the roadmap below.
 
-Google OAuth and Picker configuration is pending. Clicking Connect reports that Google is not configured and loads no private data. Blank config fails closed; it never loads mock or private data. **Not yet accepted for use.** The empty direct-upload project `ponte-preview` remains from two failed ZIP attempts; it is not the published app.
+## What it does
 
-Application board/list, literal statuses, read-only network, dashboard and limited Status/Notes editing are implemented in the interface.
+- Application board and list with literal statuses.
+- Read-only network view: people per company.
+- Dashboard.
+- Limited editing: only Status and Notes (columns J:K) of an application, confirmed by reading the cell back.
 
-## Purpose and planning
+Everything else stays untouched. The design rule is fail closed: any doubt about configuration, schema or identity means nothing is loaded and nothing is written.
 
-Ponte organizes a real job search without moving data out of the owner's Google Sheets: applications stay in the tracker sheet, contacts stay in the people/company sheets, and the app is a careful window over them. The design rule is fail closed: any doubt about configuration, schema or identity means no data is loaded and nothing is written.
+## How your data is handled
+
+- Data lives only in your Google Sheets. The repository and the public page contain no personal data. All tests and examples use invented data.
+- Sign-in uses Google OAuth with the `drive.file` scope plus `openid email profile`. You pick the tracker and contacts files with Google Picker; Ponte cannot see other files. Google's permission covers the whole selected files, while the app itself only writes Status and Notes.
+- The access token lives in memory only. No cookies, no local storage of sheet content, no analytics, no server.
+- Details: the [privacy policy](https://ponte-vat.pages.dev/privacy.html).
 
 ## Architecture
 
@@ -35,67 +44,51 @@ Browser -> static interface (no framework, no production dependencies)
 | `model.js` | Data rules: statuses, validation, matching. |
 | `api.js` | Google OAuth, Picker and Sheets access. |
 | `i18n.js` | Portuguese/English strings. |
-| `config.js` | Public Google identifiers (never secrets). |
+| `config.js` | Public Google identifiers (client ID, Picker key). Never secrets. |
 | `build.js` | Static build into `dist/`. |
-| `model.test.js`, `api.test.js` | Unit tests (`node --test`). |
+| `*.test.js` | Unit tests (`node --test`). |
 | `ui-check.js` | Synthetic UI flows via Playwright (`npm run test:ui`). |
 
 Node 22+, no production dependencies.
 
-## Data contract and boundaries
+## Data contract
 
-Tracker `Candidaturas!A:N`: exact approved A:M headers plus `ID Ponte` in N. Missing/duplicate IDs fail closed. Blank rows/dates stay blank. Networking records are never applications. Literal statuses remain separate; prepared CV is not a submission, suspended/rejected is not an offer. A date by itself is not evidence of receipt.
+Tracker `Candidaturas!A:N`: the approved A:M headers plus `ID Ponte` in N. Missing or duplicate IDs fail closed. Networking records are never applications. Contacts are read from separate people/company tabs and never modified.
 
-The contact view reads separate people/company tabs without modifying contact rows. Schema selection and matching must be validated against each user-selected file.
+Before an edit: validate the session, files, sheets and exact headers; reload the rows, find the stable ID, compare the full original row; write only J:K with RAW input; read again and confirm before showing success.
 
-Before editing: validate account/session, selected files, sheets and exact headers; reload all rows, locate stable ID, compare the complete original A:N row. Write only J:K using RAW input. Read again and confirm actual stored values before showing success. Cancel never writes. Retry after an uncertain save requires refreshing to avoid blind repeat writes.
+**Concurrency limit:** Google Sheets has no conditional update here. The checks reduce conflicts, but another writer can still change a row between read and write. Avoid editing the same row from two places at once.
 
-**Concurrency limit:** Google Sheets does not offer conditional updates here. Checks reduce conflicts but another writer can change/reorder a row between the read and write. Do not treat this as concurrency-safe. Avoid simultaneous edits; the limitation must be validated with the owner before enabling general use.
-
-## Google connection
-
-Verify the existing dedicated Google project and that billing is disabled; check the Sheets, Drive and Picker APIs rather than creating a duplicate project. Configure external OAuth in Testing, add the actual owner account as test user and register only the deployed app origin. Public `config.js` accepts an OAuth client ID, project number/app ID and an HTTP-referrer/API-restricted Picker API key. These are public browser identifiers, never a client secret. Tokens are held only in memory; no local/session storage, cookies or private rows in code.
-
-Scopes: `openid email profile drive.file`. Picker explicitly selects tracker then contacts; no broad spreadsheets or Drive scopes. The permission covers entire selected files, while application behavior restricts writes to J:K (Status/Notas). Owner confirms email in UI and userinfo must match. Seven-day Testing authorization expiry requires reconnection; short-lived tokens are cleared at expiry and disconnect. Disconnect-and-revoke additionally revokes the Google grant.
-
-Google project/API/billing status was not verified in this review. Current browser configuration is empty. Before activation, recheck current service terms and cost boundaries; no paid setup is authorized by this documentation draft.
-
-## Security and privacy
-
-DOM construction uses textContent for all sheet values; no sheet HTML is executed. Only HTTPS links allowed, with noreferrer/no-referrer. No private data in source, logs, static HTML or persistent cache. Expiry/disconnect clears rendered private data. No analytics, service worker or persistent cache. Security headers provided for Cloudflare. The public deployment contains only interface assets and public Google configuration. Privacy depends also on the owner's Google account and sharing settings, not on a promise of absolute secrecy.
-
-## Testing
-
-Unit tests cover exact status/type, networking exclusion, date validation, missing/duplicate IDs, schema mismatch, reorder lookup, conflict blocking, unsafe URLs and blank fields. 24 model/API tests passed. Synthetic OAuth/Picker/Sheets flows passed at 390, 820 and 1440 px: connection, file choice, dashboard, board/list, Cancel (zero writes), Save (one RAW write and reread), two-view network (Pessoas/Empresas), language switch and disconnect clearing private rows. Actual pixels from synthetic-flow captures were inspected.
-
-These mocks are not evidence that real Google OAuth works. Live OAuth, denied access, failed writes, round-trip save, real-data phone/tablet/desktop checks and screen-reader checks are still pending. No real application changes should be used as test fixtures. Private datasets must never be committed.
-
-Stable IDs are part of the application data contract. Use invented fixtures for tests, never owner records.
-
-## Run and deployment
+## Run it yourself
 
 ```bash
 npm test
 npm run build
 ```
 
-Serve `dist` over HTTPS. Cloudflare Pages: build `npm test && npm run build`, output `dist`, no framework. Keep the repo private. No billing/card, server, analytics or Gemini integration.
+Serve `dist` over HTTPS. To use your own Google project, create an OAuth web client and a Picker API key, then put the client ID, project number and key in `config.js`. Restrict the key to the Picker API and your site. Never commit a client secret.
 
-## Phase 1 exclusions and roadmap
+## Roadmap
 
-No new/deleted applications, drag/drop, contact editing, reminders, messages, CV downloads, Gemini or payment infrastructure. Next steps are literal contact text, not scheduled reminders.
+Done:
+- [x] Interface, data rules and tests (31 passing, synthetic data only).
+- [x] Public deployment, privacy policy, Google branding, OAuth app published.
+- [x] Google client ID and Picker key configured.
 
-- [ ] Verify the existing Google project state and complete OAuth/Picker configuration.
-- [ ] Run the pending live checks (OAuth, denied access, failed writes, round-trip save, real devices, screen reader).
-- [ ] Validate the concurrency limitation with the owner before general use.
-- [ ] Remove the leftover empty `ponte-preview` direct-upload project.
+Next:
+- [ ] Live checks with a real account: sign-in, denied access, failed write, round-trip save, phone/tablet/desktop, screen reader.
+- [ ] Decide how to handle the concurrency limit.
+- [ ] Ideas tracked as `future` issues (not commitments): Gmail alert reading, LinkedIn alert forwarding, a dedicated contact email, Google brand verification.
 
-## Credits and license status
+## Development history
 
-Built with vanilla JavaScript and Node's test runner; Playwright for synthetic UI checks. No `LICENSE` file was found at the repository root during this review; this update does not introduce one.
+Ponte started as an idea for organizing a job search without handing data to another service. The commit history was kept from the first documents to the public app and shows the whole path:
 
-## Documentation review - 2026-10-07
+- 2026-09-30: privacy, scope and setup defined; model, API layer, bilingual interface, build, tests, company/people network views.
+- 2026-10-01: first Cloudflare Pages preview, README restructured, Portuguese README added.
+- 2026-10-07/08: bilingual documentation standard, Google setup notes, recovery and ambiguous-write tests.
+- 2026-10-10: public repository with a rewritten history using invented names, privacy page, OAuth branding, app published, Google config in place. The earlier private repository is kept as an archive.
 
-This is a documentation draft, not a release or a fresh runtime audit. Current repository visibility, README files, package scripts and root license paths were checked. Historical runtime and benchmark results above have not been rerun. Screenshots require a separate capture, privacy check, upload and rendered-image check before completion. Missing images are not replaced with broken embeds.
+## License
 
-Current `config.js` has empty `clientId`, `appId` and `pickerKey`. This does not prove Google project or billing state. Live OAuth and user-data workflows remain unverified. No root `LICENSE` was returned by the current lookup; no MIT claim or new license is introduced here.
+[MIT](LICENSE) (c) 2026 Iuri Johansson.
