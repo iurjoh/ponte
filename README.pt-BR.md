@@ -2,9 +2,16 @@
 
 **Português (Brasil)** | [English](README.md)
 
+## Demo
+
+[![Abrir demo](https://img.shields.io/badge/demo-live-2ea44f)](https://ponte-vat.pages.dev/)
+
+Abra no navegador, sem instalar nada ou usar o terminal.
+
+Para entrar com Google e escolher as planilhas, abra a Ponte em um navegador normal (Chrome ou Safari), não dentro do WhatsApp.
+
 Um organizador de busca de emprego, gratuito e de código aberto. Suas candidaturas e contatos ficam nas suas próprias planilhas do Google; a Ponte é uma janela cuidadosa sobre elas. Interface em português e inglês, sem servidor, sem analytics, sem custo.
 
-**App:** https://ponte-vat.pages.dev/  
 **Política de privacidade:** https://ponte-vat.pages.dev/privacy.html  
 **Dúvidas e ideias:** [issues do GitHub](https://github.com/iurjoh/ponte/issues)
 
