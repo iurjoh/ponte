@@ -104,7 +104,7 @@ function companyCard(co){
 }
 function showDetails(r){
  if(!hasSession()){notify(new PonteError('expired'));return;}
- edit={...r,cells:[...r.cells]};const d=dialogBase(r.role);const head=el('div',{class:'dialoghead'},el('div',{},el('span',{class:'badge'},r.type),el('h2',{},r.role),el('p',{class:'muted'},r.company)),btn(t('close'),()=>{edit=null;d.remove();},'small'));d.append(head);
+ edit={...r,cells:[...r.cells]};const d=dialogBase(r.role);const head=el('div',{class:'dialoghead'},el('div',{},el('span',{class:'badge'},r.type),el('h2',{},r.role),el('p',{class:'muted'},r.company)),el('button',{type:'button',class:'close-x','aria-label':t('close'),title:t('close'),onclick:()=>{edit=null;d.remove();}},'\u00d7'));d.append(head);
  const labels=lang==='pt'?['Tipo','Cargo / oportunidade','Empresa','Código / referência','Contato / setor','Detalhes-chave','Data de envio / recibo','CV usado','Canal','Status','Notas','Fonte / evidência','Link do CV']:['Type','Role / opportunity','Company','Code / reference','Contact / department','Key details','Submission / receipt date','CV used','Channel','Status','Notes','Source / evidence','CV link'];
  const dl=el('dl');for(const i of [3,4,5,6,7,8,11,12])dl.append(el('dt',{},labels[i]),el('dd',{},i===12?link(t('cv'),r.cells[i]):r.cells[i]));d.append(dl,el('p',{class:'note'},t('notReceipt')));
  if(!isApplication(r)){d.append(el('p',{},t('readonly')),el('p',{},r.status),el('p',{},r.notes));return;}
