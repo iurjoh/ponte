@@ -85,7 +85,9 @@ dialog .field{margin:20px 0}
 dl{display:grid;grid-template-columns:145px 1fr;gap:12px;font-size:14px;line-height:1.6}
 dt{color:var(--muted)}
 dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
-.dialoghead{display:flex;justify-content:space-between;gap:14px}
+.dialoghead{display:flex;justify-content:space-between;align-items:flex-start;gap:14px}
+.close-x{flex:none;width:44px;height:44px;min-width:44px;padding:0;margin:-8px -8px 0 0;border:0;background:transparent;color:var(--muted);font-size:30px;line-height:1;display:flex;align-items:center;justify-content:center;border-radius:50%}
+.close-x:hover,.close-x:focus-visible{background:#0000000d;color:var(--green)}
 footer{font-size:12px;color:var(--muted);text-align:center;padding:26px;border-top:1px solid var(--line)}
 .setup{max-width:750px;margin:25px auto}
 .setup .field{margin:25px 0}
