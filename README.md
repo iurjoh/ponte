@@ -2,9 +2,16 @@
 
 [Português (Brasil)](README.pt-BR.md) | **English**
 
+## Demo
+
+[![Open demo](https://img.shields.io/badge/demo-live-2ea44f)](https://ponte-vat.pages.dev/)
+
+Open in your browser. No installation or terminal required.
+
+For Google sign-in and file selection, open Ponte in a regular browser (Chrome or Safari), not inside WhatsApp.
+
 A free, open-source job-search organizer. Your applications and contacts stay in your own Google Sheets; Ponte is a careful window over them. Portuguese/English interface, no server, no analytics, no cost.
 
-**Live app:** https://ponte-vat.pages.dev/  
 **Privacy policy:** https://ponte-vat.pages.dev/privacy.html  
 **Questions and ideas:** [GitHub issues](https://github.com/iurjoh/ponte/issues)
 
