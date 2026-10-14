@@ -99,3 +99,16 @@ Ponte started as an idea for organizing a job search without handing data to ano
 ## License
 
 [MIT](LICENSE) (c) 2026 Iuri Johansson.
+
+## Technology and effort snapshot
+
+Captured from repository sources on 2026-10-14. This is a source snapshot, not a claim about production versions or the technology available at the original launch.
+
+- **Stack at this snapshot:** HTML, CSS and native JavaScript; no production npm dependencies. Playwright 1.63.0 in package-lock.json is test tooling.
+- **Earlier record:** The first surviving package.json (25cc88c) declares no production dependencies and Playwright ^1.63.0 for tests.
+- **Observed calendar window:** 2026-09-30 to 2026-10-10: surviving commits reachable from main. Calendar span, not continuous work or time to launch.
+- **Pull requests:** 7 visible PRs: 0 open, 7 closed, captured 2026-10-14 before this documentation change. Closed does not mean merged. Deleted/recreated history is excluded.
+- **Decision and reason:** User-selected Google Sheets remain the data source, avoiding a separate application database; stable IDs and read-back checks reduce accidental writes.
+- **Estimated active effort:** unavailable. No reliable time log or bounded work-session reconstruction was established. Commit count and elapsed calendar time are not converted into hours.
+
+Evidence: current dependency/source files named above, retained Git history and the repository PR list. Versions and counts are fixed to this snapshot, not live counters.
