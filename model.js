@@ -20,3 +20,37 @@ export function isSent(r){return isApplication(r)&&['enviada','enviada - recibo 
 export function safeLink(value){try {const u=new URL(value);return u.protocol==='https:'?u.href:null;}catch{return null;}}
 export function rowForEdit(rows,id,opened){const found=rows.filter(r=>r.id===id);if(found.length!==1)throw new PonteError('ids');const current=found[0];if(JSON.stringify(current.cells)!==JSON.stringify(opened.cells))throw new PonteError('conflict');if(!isApplication(current))throw new PonteError('readonly');return current;}
 export function matches(r,q){return [r.role,r.company,r.type].join(' ').toLocaleLowerCase().includes(q.toLocaleLowerCase());}
+
+const OWNER_PREP=/preparad|preparando|preparação|preparacao/;
+const OWNER_REVIEW=/revis[aã]o do iuri|minha revis[aã]o|aguardando minha revis[aã]o/;
+const COMPANY_SIDE=/pela empresa|da empresa|pelo empregador|pela recrutadora|pelo rh\b|recrutador|em an[aá]lise|analisando|em avalia[çc][aã]o/;
+export function classifyApplication(r){
+ if(!isApplication(r))return null;
+ const s=r.status.trim().toLocaleLowerCase('pt-BR');
+ if(!s)return 'review';
+ if(s.includes('suspens'))return 'suspended';
+ if(s.includes('descart')||s.includes('não selecionad')||s.includes('nao selecionad')||s.includes('rejeit')||s.includes('recus'))return 'rejected';
+ if(OWNER_PREP.test(s)&&!COMPANY_SIDE.test(s))return null;
+ if(OWNER_REVIEW.test(s)&&!COMPANY_SIDE.test(s))return null;
+ if(/revis[aã]o|revisar|revisad/.test(s))return COMPANY_SIDE.test(s)?'screening':'review';
+ if(s.includes('entrevist'))return 'interview';
+ if(s.includes('triagem')||s.includes('screening')||COMPANY_SIDE.test(s))return 'screening';
+ if(s.startsWith('enviada')||s==='e-mail enviado'||s==='email enviado'||s.includes('aguardando'))return 'waiting';
+ return 'review';
+}
+const SENT_CATS=['waiting','screening','interview','rejected','suspended'];
+export function computeResults(rows,year=''){
+ const classified=rows.map(r=>({r,category:classifyApplication(r)})).filter(x=>x.category);
+ const scoped=year?classified.filter(x=>x.r.date&&x.r.date.startsWith(year)):classified;
+ const by=c=>scoped.filter(x=>x.category===c).map(x=>x.r);
+ const sent=scoped.filter(x=>SENT_CATS.includes(x.category)).length;
+ return {year,sent,waiting:by('waiting'),screening:by('screening'),interview:by('interview'),rejected:by('rejected'),suspended:by('suspended'),review:by('review')};
+}
+export function resultYears(rows){
+ return [...new Set(rows.filter(isApplication).map(r=>r.date).filter(Boolean).map(d=>d.slice(0,4)))].sort().reverse();
+}
+export function waitingDays(date,now=new Date()){
+ if(!date)return null;
+ const days=Math.floor((now-new Date(date+'T00:00:00Z'))/86400000);
+ return days>=0?days:null;
+}
